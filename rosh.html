@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Love Institution Monte Carlo (Goguen-style parameters)</title>
+  <style>
+    :root {
+      --bg: #0b0f17;
+      --panel: #111827;
+      --panel2: #0f172a;
+      --text: #e5e7eb;
+      --muted: #9ca3af;
+      --border: rgba(255,255,255,.08);
+      --accent: #60a5fa;
+      --good: #34d399;
+      --warn: #fbbf24;
+      --bad: #fb7185;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color: var(--text);
+      background: radial-gradient(1200px 700px at 20% 0%, #0f1a33 0%, var(--bg) 60%);
+    }
+    header {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0));
+    }
+    header h1 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: .2px;
+      font-weight: 650;
+    }
+    header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.35;
+      max-width: 1000px;
+    }
+
+    .wrap {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 16px;
+      padding: 16px;
+    }
+    @media (max-width: 980px) {
+      .wrap { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+      box-shadow: 0 12px 30px rgba(0,0,0,.25);
+    }
+    .controls h2, .charts h2 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 700;
+      color: #f3f4f6;
+      letter-spacing: .2px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 56px;
+      gap: 10px;
+      align-items: center;
+      margin: 12px 0;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      color: #f3f4f6;
+      margin-bottom: 6px;
+      font-weight: 650;
+    }
+    .hint {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+      line-height: 1.25;
+    }
+    input[type="range"] { width: 100%; }
+    .val {
+      font-variant-numeric: tabular-nums;
+      font-size: 12px;
+      color: var(--text);
+      text-align: right;
+      padding: 6px 8px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .meta {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .pill {
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      padding: 10px;
+    }
+    .pill .k { font-size: 11px; color: var(--muted); }
+    .pill .v { font-size: 16px; font-weight: 750; margin-top: 2px; }
+    .pill .sub { font-size: 11px; color: var(--muted); margin-top: 4px; line-height: 1.3; }
+
+    .chartsGrid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+    }
+    @media (min-width: 1100px) {
+      .chartsGrid { grid-template-columns: 1fr 1fr; }
+      .chartsGrid .wide { grid-column: span 2; }
+    }
+
+    .chartCard {
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+    .chartHead {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .chartTitle {
+      font-size: 12px;
+      font-weight: 750;
+      color: #f3f4f6;
+    }
+    .chartStats {
+      font-size: 11px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    canvas { width: 100%; height: 220px; display: block; border-radius: 10px; }
+    .footerNote {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    .btnRow {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+    button {
+      appearance: none;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      color: var(--text);
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    button:hover { border-color: rgba(255,255,255,0.22); }
+    .small { font-size: 11px; padding: 9px 10px; }
+    .right { margin-left: auto; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Love Institution Monte Carlo Simulator (You ↔ Roshila)</h1>
+    <p>
+      Sliders control the “institution parameters” (EA, SD, IT, PD, AP, RR). Each move re-runs Monte Carlo simulations and updates
+      probability distributions for Stability, Anxiety Risk, and Closeness. Values are in <b>[0,1]</b>.
+    </p>
+  </header>
+
+  <div class="wrap">
+    <section class="card controls">
+      <h2>Parameters</h2>
+
+      <div class="row">
+        <div>
+          <label for="EA">Expression Asymmetry (EA)</label>
+          <input id="EA" type="range" min="0" max="1" step="0.01" value="0.65" />
+          <div class="hint">Difference in style (essays vs footnotes). Higher can be cute… or destabilizing without trust.</div>
+        </div>
+        <div class="val" id="EA_val"></div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="SD">Semantic Density (SD)</label>
+          <input id="SD" type="range" min="0" max="1" step="0.01" value="0.70" />
+          <div class="hint">How much meaning is carried per word (brevity-as-gravity).</div>
+        </div>
+        <div class="val" id="SD_val"></div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="IT">Interpretive Trust (IT)</label>
+          <input id="IT" type="range" min="0" max="1" step="0.01" value="0.78" />
+          <div class="hint">Probability you read silence/brevity charitably (silence ≠ withdrawal).</div>
+        </div>
+        <div class="val" id="IT_val"></div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="PD">Physical Distance (PD)</label>
+          <input id="PD" type="range" min="0" max="1" step="0.01" value="0.55" />
+          <div class="hint">Separation. Raises longing; can reduce felt closeness unless compensated.</div>
+        </div>
+        <div class="val" id="PD_val"></div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="AP">Attachment Persistence (AP)</label>
+          <input id="AP" type="range" min="0" max="1" step="0.01" value="0.82" />
+          <div class="hint">How stable the bond is across time gaps (steady missing vs destabilizing missing).</div>
+        </div>
+        <div class="val" id="AP_val"></div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="RR">Reciprocity Recognition (RR)</label>
+          <input id="RR" type="range" min="0" max="1" step="0.01" value="0.74" />
+          <div class="hint">Shared meta-awareness (“on brand for us”). Normalizes asymmetry.</div>
+        </div>
+        <div class="val" id="RR_val"></div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="N">Simulations (N)</label>
+          <input id="N" type="range" min="500" max="30000" step="500" value="12000" />
+          <div class="hint">More simulations = smoother distributions (slower on older devices).</div>
+        </div>
+        <div class="val" id="N_val"></div>
+      </div>
+
+      <div class="btnRow">
+        <button id="reset" class="small">Reset defaults</button>
+        <button id="randomize" class="small">Randomize</button>
+        <button id="rerun" class="small right">Re-run</button>
+      </div>
+
+      <div class="meta">
+        <div class="pill">
+          <div class="k">Institution regime</div>
+          <div class="v" id="regime">—</div>
+          <div class="sub" id="regimeSub">—</div>
+        </div>
+        <div class="pill">
+          <div class="k">Interpretation note</div>
+          <div class="v" id="note">—</div>
+          <div class="sub">This is a toy model; tune sliders to match your real dynamics.</div>
+        </div>
+      </div>
+
+      <div class="footerNote">
+        Model idea: Trust & Recognition reduce “misread probability” of brevity/silence; Distance raises longing; Persistence stabilizes across time; Density turns brevity into devotion.
+      </div>
+    </section>
+
+    <section class="card charts">
+      <h2>Monte Carlo Distributions</h2>
+
+      <div class="chartsGrid">
+        <div class="chartCard">
+          <div class="chartHead">
+            <div class="chartTitle">Stability (P)</div>
+            <div class="chartStats" id="st_stats">—</div>
+          </div>
+          <canvas id="stability"></canvas>
+        </div>
+
+        <div class="chartCard">
+          <div class="chartHead">
+            <div class="chartTitle">Anxiety Risk (P)</div>
+            <div class="chartStats" id="an_stats">—</div>
+          </div>
+          <canvas id="anxiety"></canvas>
+        </div>
+
+        <div class="chartCard wide">
+          <div class="chartHead">
+            <div class="chartTitle">Closeness / Felt Connection (P)</div>
+            <div class="chartStats" id="cl_stats">—</div>
+          </div>
+          <canvas id="closeness"></canvas>
+        </div>
+      </div>
+
+      <div class="footerNote">
+        Hover isn’t needed: the summary stats (mean/median/90% interval) update live. Distributions reflect uncertainty from day-to-day variability (“noise”) and interpretation slips.
+      </div>
+    </section>
+  </div>
+
+<script>
+(() => {
+  // ---------- Utilities ----------
+  const clamp01 = x => Math.max(0, Math.min(1, x));
+  const lerp = (a,b,t) => a + (b-a)*t;
+
+  // Fast-ish PRNG (Mulberry32)
+  function mulberry32(seed) {
+    let t = seed >>> 0;
+    return function() {
+      t += 0x6D2B79F5;
+      let r = Math.imul(t ^ (t >>> 15), 1 | t);
+      r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+      return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // Box-Muller normal
+  function randn(rng) {
+    let u = 0, v = 0;
+    while (u === 0) u = rng();
+    while (v === 0) v = rng();
+    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+  }
+
+  function quantile(sorted, q) {
+    const n = sorted.length;
+    if (n === 0) return NaN;
+    const pos = (n - 1) * q;
+    const base = Math.floor(pos);
+    const rest = pos - base;
+    if (sorted[base + 1] === undefined) return sorted[base];
+    return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
+  }
+
+  function stats(arr) {
+    const n = arr.length;
+    const s = [...arr].sort((a,b)=>a-b);
+    let mean = 0;
+    for (let i=0;i<n;i++) mean += arr[i];
+    mean /= n;
+    const med = quantile(s, 0.5);
+    const p05 = quantile(s, 0.05);
+    const p95 = quantile(s, 0.95);
+    return { mean, med, p05, p95 };
+  }
+
+  // ---------- Canvas histogram ----------
+  function drawHistogram(canvas, values, opts = {}) {
+    const ctx = canvas.getContext('2d');
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    const W = rect.width, H = rect.height;
+    const pad = 16;
+
+    // Background
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = 'rgba(255,255,255,0.02)';
+    ctx.fillRect(0,0,W,H);
+
+    // Grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1;
+    for (let i=0;i<=5;i++){
+      const x = pad + (W-2*pad)*(i/5);
+      ctx.beginPath(); ctx.moveTo(x,pad); ctx.lineTo(x,H-pad); ctx.stroke();
+    }
+    for (let i=0;i<=4;i++){
+      const y = pad + (H-2*pad)*(i/4);
+      ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(W-pad,y); ctx.stroke();
+    }
+
+    const bins = opts.bins ?? 40;
+    const counts = new Array(bins).fill(0);
+
+    for (const v of values) {
+      const x = clamp01(v);
+      const idx = Math.min(bins-1, Math.floor(x * bins));
+      counts[idx]++;
+    }
+    const maxC = Math.max(...counts, 1);
+
+    const barW = (W - 2*pad) / bins;
+    for (let i=0;i<bins;i++){
+      const h = (H - 2*pad) * (counts[i] / maxC);
+      const x = pad + i * barW;
+      const y = (H - pad) - h;
+      // Simple neutral bars (no fixed colors)
+      ctx.fillStyle = 'rgba(255,255,255,0.18)';
+      ctx.fillRect(x, y, Math.max(1, barW-1), h);
+    }
+
+    // Axis labels (0 and 1)
+    ctx.fillStyle = 'rgba(229,231,235,0.8)';
+    ctx.font = '11px ui-sans-serif, system-ui';
+    ctx.textBaseline = 'top';
+    ctx.fillText('0', pad, H - pad + 2);
+    const oneW = ctx.measureText('1').width;
+    ctx.fillText('1', W - pad - oneW, H - pad + 2);
+  }
+
+  // ---------- Model (toy institution dynamics) ----------
+  // We generate day-level variability and interpretation slips.
+  // Outputs are bounded to [0,1] and treated as probabilities.
+
+  function simulate(N, params, seed=123456) {
+    const rng = mulberry32(seed);
+
+    const { EA, SD, IT, PD, AP, RR } = params;
+
+    const stability = new Float32Array(N);
+    const anxiety   = new Float32Array(N);
+    const closeness = new Float32Array(N);
+
+    // "Misread probability" goes up with asymmetry and distance,
+    // down with trust/recognition/density (density helps brevity land as love).
+    // Add noise per simulation.
+    for (let i=0;i<N;i++){
+      // stochastic day-to-day context noise
+      const noiseA = 0.12 * randn(rng); // interpretation variance
+      const noiseC = 0.10 * randn(rng); // connection variance
+      const noiseS = 0.10 * randn(rng); // stability variance
+
+      const misread = clamp01(
+        0.45*EA + 0.30*PD - 0.55*IT - 0.25*RR - 0.25*SD + 0.18 + noiseA
+      );
+
+      const longing = clamp01(
+        0.15 + 0.75*PD + 0.10*EA - 0.20*IT + 0.08*randn(rng)
+      );
+
+      // closeness rises with trust, persistence, recognition, and density;
+      // distance reduces it; misread reduces it; longing can slightly increase it
+      // when persistence is strong (yearning that reinforces value).
+      const yearningBonus = clamp01(longing * (0.20 + 0.55*AP)); // bounded
+      const close = clamp01(
+        0.10
+        + 0.42*IT
+        + 0.28*AP
+        + 0.22*RR
+        + 0.18*SD
+        - 0.42*PD
+        - 0.35*misread
+        + 0.12*yearningBonus
+        + noiseC
+      );
+
+      // anxiety risk rises with misread + distance, drops with trust + persistence + recognition
+      const anx = clamp01(
+        0.10
+        + 0.65*misread
+        + 0.30*PD
+        + 0.08*EA
+        - 0.50*IT
+        - 0.35*AP
+        - 0.20*RR
+        + 0.08*randn(rng)
+      );
+
+      // stability rises with closeness + persistence + trust + recognition; falls with anxiety and misread and distance
+      const stab = clamp01(
+        0.10
+        + 0.40*close
+        + 0.35*AP
+        + 0.22*IT
+        + 0.18*RR
+        + 0.08*SD
+        - 0.45*anx
+        - 0.18*misread
+        - 0.12*PD
+        + noiseS
+      );
+
+      stability[i] = stab;
+      anxiety[i] = anx;
+      closeness[i] = close;
+    }
+
+    return { stability, anxiety, closeness };
+  }
+
+  // ---------- UI wiring ----------
+  const ids = ["EA","SD","IT","PD","AP","RR","N"];
+  const inputs = Object.fromEntries(ids.map(id => [id, document.getElementById(id)]));
+  const vals   = Object.fromEntries(ids.map(id => [id+"_val", document.getElementById(id+"_val")]));
+
+  const canv = {
+    st: document.getElementById('stability'),
+    an: document.getElementById('anxiety'),
+    cl: document.getElementById('closeness')
+  };
+
+  const statEl = {
+    st: document.getElementById('st_stats'),
+    an: document.getElementById('an_stats'),
+    cl: document.getElementById('cl_stats')
+  };
+
+  const regimeEl = document.getElementById('regime');
+  const regimeSubEl = document.getElementById('regimeSub');
+  const noteEl = document.getElementById('note');
+
+  function readParams() {
+    return {
+      EA: +inputs.EA.value,
+      SD: +inputs.SD.value,
+      IT: +inputs.IT.value,
+      PD: +inputs.PD.value,
+      AP: +inputs.AP.value,
+      RR: +inputs.RR.value
+    };
+  }
+  function readN() { return Math.floor(+inputs.N.value); }
+
+  function fmt(x) { return (Math.round(x*100)/100).toFixed(2); }
+  function fmtPct(x){ return `${Math.round(x*100)}%`; }
+
+  function updateValueBadges() {
+    for (const id of ["EA","SD","IT","PD","AP","RR"]) {
+      vals[id+"_val"].textContent = fmt(+inputs[id].value);
+    }
+    vals["N_val"].textContent = String(readN());
+  }
+
+  function setRegime(p) {
+    // Simple regime classifier (for narrative feedback)
+    const cohesion = 0.45*p.IT + 0.30*p.RR + 0.25*p.AP + 0.15*p.SD - 0.25*p.PD - 0.15*p.EA;
+    const fragility = 0.35*p.PD + 0.25*p.EA - 0.40*p.IT - 0.25*p.AP - 0.20*p.RR;
+
+    if (cohesion > 0.45) {
+      regimeEl.textContent = "Secure Asymmetry";
+      regimeSubEl.textContent = "Different styles, shared meaning. Brevity reads as density.";
+      noteEl.textContent = "Brevity ≈ gravity";
+    } else if (fragility > 0.20) {
+      regimeEl.textContent = "Misread-Prone";
+      regimeSubEl.textContent = "Asymmetry + distance can be misinterpreted; trust is the stabilizer.";
+      noteEl.textContent = "Silence can wobble";
+    } else {
+      regimeEl.textContent = "Balanced / Transitional";
+      regimeSubEl.textContent = "Mostly stable; outcomes depend on daily context and interpretation noise.";
+      noteEl.textContent = "Context matters";
+    }
+  }
+
+  function renderStatsAndCharts(out) {
+    // Convert typed arrays to normal arrays for stats (small overhead, fine)
+    const stArr = Array.from(out.stability);
+    const anArr = Array.from(out.anxiety);
+    const clArr = Array.from(out.closeness);
+
+    const stS = stats(stArr);
+    const anS = stats(anArr);
+    const clS = stats(clArr);
+
+    statEl.st.textContent = `mean ${fmtPct(stS.mean)} · median ${fmtPct(stS.med)} · 90% [${fmtPct(stS.p05)}, ${fmtPct(stS.p95)}]`;
+    statEl.an.textContent = `mean ${fmtPct(anS.mean)} · median ${fmtPct(anS.med)} · 90% [${fmtPct(anS.p05)}, ${fmtPct(anS.p95)}]`;
+    statEl.cl.textContent = `mean ${fmtPct(clS.mean)} · median ${fmtPct(clS.med)} · 90% [${fmtPct(clS.p05)}, ${fmtPct(clS.p95)}]`;
+
+    drawHistogram(canv.st, stArr, { bins: 44 });
+    drawHistogram(canv.an, anArr, { bins: 44 });
+    drawHistogram(canv.cl, clArr, { bins: 60 });
+  }
+
+  // Debounced rerun
+  let t = null;
+  function scheduleRun() {
+    if (t) clearTimeout(t);
+    t = setTimeout(run, 60);
+  }
+
+  function run() {
+    updateValueBadges();
+    const p = readParams();
+    setRegime(p);
+
+    const N = readN();
+
+    // Changing seed a little based on sliders (so distributions "feel" different)
+    const seed =
+      (Math.floor(p.EA*1000) * 73856093) ^
+      (Math.floor(p.SD*1000) * 19349663) ^
+      (Math.floor(p.IT*1000) * 83492791) ^
+      (Math.floor(p.PD*1000) * 2654435761) ^
+      (Math.floor(p.AP*1000) * 97531) ^
+      (Math.floor(p.RR*1000) * 86471);
+
+    const out = simulate(N, p, seed >>> 0);
+    renderStatsAndCharts(out);
+  }
+
+  // Events
+  for (const id of ids) {
+    inputs[id].addEventListener('input', scheduleRun);
+  }
+  window.addEventListener('resize', scheduleRun);
+
+  document.getElementById('rerun').addEventListener('click', run);
+  document.getElementById('reset').addEventListener('click', () => {
+    inputs.EA.value = 0.65;
+    inputs.SD.value = 0.70;
+    inputs.IT.value = 0.78;
+    inputs.PD.value = 0.55;
+    inputs.AP.value = 0.82;
+    inputs.RR.value = 0.74;
+    inputs.N.value  = 12000;
+    run();
+  });
+
+  document.getElementById('randomize').addEventListener('click', () => {
+    // keep N in a reasonable band
+    inputs.EA.value = Math.random().toFixed(2);
+    inputs.SD.value = Math.random().toFixed(2);
+    inputs.IT.value = Math.random().toFixed(2);
+    inputs.PD.value = Math.random().toFixed(2);
+    inputs.AP.value = Math.random().toFixed(2);
+    inputs.RR.value = Math.random().toFixed(2);
+    inputs.N.value  = String(5000 + Math.floor(Math.random()*15000));
+    run();
+  });
+
+  // Initial render
+  run();
+})();
+</script>
+</body>
+</html>
